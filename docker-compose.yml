@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16
+    container_name: ims-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: medwarehouse
+    ports:
+      - "5432:5432"            # optional (for local tools)
+    volumes:
+      - pgdata_med:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d medwarehouse || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    container_name: ims-app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: medwarehouse
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./public:/usr/src/app/public:ro
+      - ./server.js:/usr/src/app/server.js:ro
+      - ./package.json:/usr/src/app/package.json:ro
+
+volumes:
+  pgdata_med:
