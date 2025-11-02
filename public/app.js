@@ -1,9 +1,9 @@
 // public/app.js — lightweight client glue
 
-async function getJSON(url) { const r = await fetch(url); if (!r.ok) throw new Error(await r.text()); return r.json(); }
-async function postJSON(url, body) {
-  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
-  if (!r.ok) throw new Error(await r.text()); return r.json();
+async function getJSON(url){ const r=await fetch(url); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+async function postJSON(url,body){
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok) throw new Error(await r.text()); return r.json();
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -12,8 +12,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // -------- Overview (index.html)
   if (path.endsWith('/') || path.endsWith('/index.html')) {
     try {
+      // Quick stats
       const stats = await getJSON('/api/stats?days=30');
-      // Fill Quick Stats numbers if they exist (by order in DOM)
       const vals = document.querySelectorAll('.stat .value');
       if (vals.length >= 4) {
         vals[0].textContent = stats.total_items ?? '—';
@@ -21,13 +21,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         vals[2].textContent = stats.low_stock ?? '—';
         vals[3].textContent = stats.expiring_soon ?? '—';
       }
-      // Recent transactions table (if present)
-      const tbody = document.querySelector('section.card.recent tbody, section.card:nth-of-type(3) tbody');
-      if (tbody) {
+
+      // Low Stock Alerts (NEW)
+      const alertsBody =
+        document.querySelector('#alerts-body') ||                             // if you add an id
+        document.querySelectorAll('section.card table tbody')[0];             // first table on the page
+      if (alertsBody) {
+        const alerts = await getJSON('/api/alerts?days=30');
+        alertsBody.innerHTML = alerts.map(a => {
+          const status = (a.stock <= 0) ? 'OUT' : (a.stock < a.min_level ? 'LOW' : 'OK');
+          return `<tr>
+            <td>${a.sku}</td>
+            <td>${a.name ?? ''}</td>
+            <td>${a.stock ?? 0}</td>
+            <td>${a.min_level ?? 0}</td>
+            <td>${status}</td>
+          </tr>`;
+        }).join('');
+      }
+
+      // Recent transactions
+      const txBody = document.querySelector('section.card.recent tbody')
+        || document.querySelectorAll('section.card table tbody')[1];          // second table on the page
+      if (txBody) {
         const tx = await getJSON('/api/transactions?limit=10');
-        tbody.innerHTML = tx.map(t => `
+        txBody.innerHTML = tx.map(t => `
           <tr>
-            <td>${new Date(t.ts ?? t.time ?? Date.now()).toLocaleString()}</td>
+            <td>${new Date(t.ts ?? Date.now()).toLocaleString()}</td>
             <td><span class="pill ${t.type==='RECEIVE'?'ok':'warn'}">${t.type}</span></td>
             <td>${t.sku ?? ''}</td>
             <td>${t.lot_no ?? ''}</td>
@@ -40,7 +60,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // -------- Items (items.html)
   if (path.endsWith('/items.html')) {
-    // Form: give inputs "name", "sku", "category", "unit", "min_level" in markup
     const form = document.querySelector('form');
     const tableBody = document.querySelector('table tbody');
     const search = document.querySelector('.actions input');

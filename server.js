@@ -109,12 +109,17 @@ ORDER BY name;`;
 
 const Q_RECENT_TX = `
 SELECT t.ts, t.type, t.qty_change,
-       i.sku, l.lot_no, to_char(l.expiry_date,'YYYY-MM-DD') AS expiry
+       i.sku,
+       l.lot_no,
+       TO_CHAR(l.expiry_date,'YYYY-MM-DD') AS expiry,
+       l.location
 FROM transactions t
-LEFT JOIN items i ON i.item_id=t.item_id
-LEFT JOIN lots  l ON l.lot_id=t.lot_id
+LEFT JOIN items i ON i.item_id = t.item_id
+LEFT JOIN lots  l ON l.lot_id  = t.lot_id
 ORDER BY t.ts DESC
-LIMIT $1;`;
+LIMIT $1;
+`;
+
 
 const Q_STATS = `
 WITH s AS (
@@ -144,8 +149,10 @@ FROM items i
 LEFT JOIN lots l ON l.item_id=i.item_id
 GROUP BY i.item_id
 HAVING COALESCE(SUM(l.quantity),0) < i.min_level
+   OR MIN(l.expiry_date) IS NULL
    OR MIN(l.expiry_date) <= CURRENT_DATE + ($1 || ' days')::interval
 ORDER BY i.name;`;
+
 
 // ----- Init -----
 async function init() {
