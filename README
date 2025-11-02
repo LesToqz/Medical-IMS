@@ -1,0 +1,63 @@
+## 🧱 1. **Build the Docker images**
+
+From your project root (where your `Dockerfile` and `docker-compose.yml` are):
+
+```bash
+    docker compose build
+
+```
+
+- This builds both containers (backend + PostgreSQL).
+- If you change code later, rebuild with:
+    
+```bash
+    docker compose build --no-cache
+    
+```
+
+
+## ▶️ 2. **Start (run) the containers**
+
+To run everything in the background (detached mode):
+
+```bash
+docker compose up -d
+
+```
+
+To view logs live in the terminal (non-detached):
+
+```bash
+docker compose up
+
+```
+
+Then open your browser and go to
+
+👉 [**http://localhost:3000**](http://localhost:3000/)
+
+
+## 🛑 3. **Stop the containers**
+
+Gracefully stop (keeps data volumes intact):
+
+```bash
+docker compose down
+
+```
+
+If you also want to remove **volumes** (⚠️ wipes PostgreSQL data):
+
+```bash
+docker compose down -v
+
+```
+
+---
+
+## 🔁 5. **Restart the containers**
+
+```bash
+docker compose restart
+
+```
